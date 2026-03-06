@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Terminal v2.0</title>
+    <title>Matrix Terminal v3.0 - Stable</title>
     <style>
         :root {
             --matrix-green: #00ff41;
             --neon-blue: #00f3ff;
             --neon-pink: #ff00ff;
-            --glass: rgba(0, 20, 0, 0.85);
+            --glass: rgba(0, 15, 0, 0.9);
         }
 
         body { 
@@ -18,45 +18,45 @@
             overflow: hidden; display: flex; height: 100vh;
         }
 
-        /* Hintergrund Matrix Regen */
-        #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.4; }
+        /* Matrix Hintergrund */
+        #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.35; }
 
-        /* Links: Chat */
+        /* Layout */
         #chat-section { 
             width: 380px; background: var(--glass); border-right: 1px solid var(--matrix-green);
-            display: flex; flex-direction: column; box-shadow: 10px 0 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; z-index: 10;
         }
         
-        #chat-header { padding: 15px; border-bottom: 1px solid var(--matrix-green); display: flex; justify-content: space-between; align-items: center; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { border: 1px solid rgba(0, 255, 65, 0.3); padding: 8px; border-radius: 4px; background: rgba(0, 30, 0, 0.4); font-size: 0.85rem; }
+        #chat-header { padding: 15px; border-bottom: 1px solid var(--matrix-green); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 40, 0, 0.5); }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; }
+        .msg { border: 1px solid rgba(0, 255, 65, 0.2); padding: 8px; border-radius: 4px; background: rgba(0, 20, 0, 0.6); font-size: 0.85rem; line-height: 1.4; }
 
-        #input-area { padding: 15px; background: rgba(0,0,0,0.5); display: flex; gap: 10px; }
+        #input-area { padding: 15px; background: black; display: flex; gap: 10px; border-top: 1px solid var(--matrix-green); }
         input { flex: 1; padding: 10px; background: #000; border: 1px solid var(--matrix-green); color: var(--matrix-green); outline: none; }
 
-        /* Rechts: Game */
-        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        #status-bar { position: absolute; top: 20px; text-align: center; }
+        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        #status-bar { text-align: center; margin-bottom: 30px; }
         
-        .grid { display: grid; grid-template-columns: repeat(3, 110px); gap: 15px; margin-top: 20px; }
+        /* Tic Tac Toe Grid */
+        .grid { display: grid; grid-template-columns: repeat(3, 120px); gap: 15px; }
         .cell { 
-            width: 110px; height: 110px; border: 2px solid var(--matrix-green);
+            width: 120px; height: 120px; border: 2px solid var(--matrix-green);
             display: flex; align-items: center; justify-content: center; 
-            font-size: 3rem; cursor: pointer; transition: 0.2s; background: rgba(0,0,0,0.6);
+            font-size: 3.5rem; cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.8);
         }
-        .cell:hover { background: rgba(0, 255, 65, 0.1); box-shadow: 0 0 15px var(--matrix-green); }
-        .cell.x-mark { color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
-        .cell.o-mark { color: var(--neon-pink); text-shadow: 0 0 15px var(--neon-pink); }
+        .cell:hover { background: rgba(0, 255, 65, 0.15); box-shadow: 0 0 20px var(--matrix-green); }
+        .cell.x-mark { color: var(--neon-blue); text-shadow: 0 0 20px var(--neon-blue); }
+        .cell.o-mark { color: var(--neon-pink); text-shadow: 0 0 20px var(--neon-pink); }
 
-        /* Overlay */
+        /* Sieg-Overlay */
         #overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column;
+            background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column;
             align-items: center; justify-content: center; font-size: 2.5rem; text-align: center;
         }
 
-        button { cursor: pointer; background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 5px 10px; font-family: inherit; }
-        button:hover { background: var(--matrix-green); color: black; }
+        button { cursor: pointer; background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 8px 15px; font-family: inherit; transition: 0.3s; }
+        button:hover { background: var(--matrix-green); color: black; box-shadow: 0 0 10px var(--matrix-green); }
     </style>
 </head>
 <body>
@@ -65,20 +65,20 @@
 
 <div id="chat-section">
     <div id="chat-header">
-        <span>> SYSTEM_LOG</span>
+        <span>> LOG_STREAM</span>
         <button onclick="clearChat()">PURGE</button>
     </div>
     <div id="messages"></div>
     <div id="input-area">
-        <input type="text" id="msgInput" placeholder="Enter message..." autocomplete="off">
+        <input type="text" id="msgInput" placeholder="Befehl eingeben..." autocomplete="off">
     </div>
 </div>
 
 <div id="game-section">
     <div id="status-bar">
-        <div id="player-info">IDENTIFYING...</div>
-        <div id="opponent-info" style="font-size: 0.8rem; margin-top: 5px;">GEGNER: <span id="status-dot">CHECKING...</span></div>
-        <h2 id="turn-display" style="margin-top: 20px; color: gold;">WARTE...</h2>
+        <div id="player-display" style="font-size: 1.2rem; margin-bottom: 5px;">IDENTIFIZIERE...</div>
+        <div id="opponent-info">GEGNER: <span id="status-dot">...</span></div>
+        <h2 id="turn-display" style="margin-top: 15px;">Warten...</h2>
     </div>
     
     <div class="grid" id="board">
@@ -92,14 +92,14 @@
         <div class="cell" data-index="7"></div>
         <div class="cell" data-index="8"></div>
     </div>
-    <button onclick="resetGame()" style="margin-top: 30px;">REBOOT GAME</button>
+    <button onclick="resetGame()" style="margin-top: 30px;">SYSTEM REBOOT (RESET)</button>
 </div>
 
 <div id="overlay"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, set, onValue, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDLFkWGvGxakLSoX8Vqh8qCunuzpwMOCfk",
@@ -114,23 +114,23 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- IDENTITY SYSTEM ---
-    let userName = localStorage.getItem("userName") || prompt("Dein Hacker-Name:") || "User_" + Math.floor(Math.random()*1000);
+    // --- IDENTITÄT ---
+    let userName = localStorage.getItem("userName") || prompt("Hacker-Pseudonym eingeben:") || "User_" + Math.floor(Math.random()*999);
     localStorage.setItem("userName", userName);
 
     let mySymbol = sessionStorage.getItem("mySymbol");
     if(!mySymbol) {
-        mySymbol = prompt("Wähle dein Symbol (X oder O):").toUpperCase();
+        mySymbol = prompt("Wähle deine Fraktion (X oder O):").toUpperCase();
         if(mySymbol !== "X" && mySymbol !== "O") mySymbol = "X";
         sessionStorage.setItem("mySymbol", mySymbol);
     }
-    document.getElementById("player-info").innerText = `OPERATOR: ${userName} [${mySymbol}]`;
+    document.getElementById("player-display").innerText = `OPERATOR: ${userName} [${mySymbol}]`;
 
-    // --- MATRIX BACKGROUND ---
+    // --- MATRIX EFFEKT ---
     const canvas = document.getElementById('matrix-canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%";
+    const letters = "0101010101ABCDEFGHIJKLMNOPQRSTUVWXYZ$+-*/=%";
     const fontSize = 16;
     const columns = canvas.width / fontSize;
     const drops = Array(Math.floor(columns)).fill(1);
@@ -138,8 +138,7 @@
     function drawMatrix() {
         ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#0F0";
-        ctx.font = fontSize + "px arial";
+        ctx.fillStyle = "#0F0"; ctx.font = fontSize + "px arial";
         for (let i = 0; i < drops.length; i++) {
             const text = letters[Math.floor(Math.random() * letters.length)];
             ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -147,9 +146,9 @@
             drops[i]++;
         }
     }
-    setInterval(drawMatrix, 33);
+    setInterval(drawMatrix, 35);
 
-    // --- PRESENCE SYSTEM (Wer ist online?) ---
+    // --- ONLINE STATUS ---
     const myStatusRef = ref(db, `status/${mySymbol}`);
     set(myStatusRef, { online: true, name: userName });
     onDisconnect(myStatusRef).remove();
@@ -164,10 +163,10 @@
         }
     });
 
-    // --- CHAT LOGIK ---
+    // --- CHAT ---
     const msgInput = document.getElementById("msgInput");
     msgInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter" && msgInput.value) {
+        if (e.key === "Enter" && msgInput.value.trim()) {
             push(ref(db, "chat"), { sender: userName, text: msgInput.value, symbol: mySymbol });
             msgInput.value = "";
         }
@@ -182,20 +181,29 @@
         document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
     });
 
-    window.clearChat = () => { if(confirm("Protokolle löschen?")) remove(ref(db, "chat")); };
+    window.clearChat = () => { if(confirm("Chat-Logs löschen?")) remove(ref(db, "chat")); };
     onValue(ref(db, "chat"), (snap) => { if(!snap.exists()) document.getElementById("messages").innerHTML = ""; });
 
-    // --- GAME LOGIK ---
+    // --- SPIEL LOGIK (VERBESSERT) ---
     const cells = document.querySelectorAll('.cell');
     
+    // Board beobachten
     onValue(ref(db, "game"), (snap) => {
         const data = snap.val() || { turn: "X", cells: {} };
         const board = data.cells || {};
-        const turn = data.turn || "X";
+        const currentTurn = data.turn || "X";
 
-        document.getElementById("turn-display").innerText = (turn === mySymbol) ? ">> DEIN ZUG <<" : "WARTE AUF GEGNER...";
-        document.getElementById("turn-display").style.color = (turn === mySymbol) ? "var(--matrix-green)" : "gold";
+        // Turn Display
+        const turnDisplay = document.getElementById("turn-display");
+        if (currentTurn === mySymbol) {
+            turnDisplay.innerText = ">> DEIN ZUG <<";
+            turnDisplay.style.color = "var(--matrix-green)";
+        } else {
+            turnDisplay.innerText = "GEGNER IST AM ZUG...";
+            turnDisplay.style.color = "gold";
+        }
 
+        // Zellen füllen
         cells.forEach((cell, i) => {
             const val = board[i] || "";
             cell.innerText = val;
@@ -203,36 +211,49 @@
         });
 
         // Win Check
-        const winner = checkWinner(Object.values(board).length >= 5 ? board : {});
+        const winner = checkWinner(board);
         if(winner) showOverlay(winner);
     });
 
+    // Klick Logik
     cells.forEach(cell => {
-        cell.onclick = () => {
-            onValue(ref(db, "game"), (snap) => {
-                const data = snap.val() || { turn: "X", cells: {} };
-                if(data.turn === mySymbol && !data.cells[cell.dataset.index]) {
-                    set(ref(db, `game/cells/${cell.dataset.index}`), mySymbol);
-                    set(ref(db, "game/turn"), mySymbol === "X" ? "O" : "X");
-                }
-            }, { onlyOnce: true });
+        cell.onclick = async () => {
+            const gameSnap = await get(ref(db, "game"));
+            const data = gameSnap.val() || { turn: "X", cells: {} };
+            const board = data.cells || {};
+            const turn = data.turn || "X";
+            const idx = cell.dataset.index;
+
+            if (turn === mySymbol && !board[idx] && !checkWinner(board)) {
+                await set(ref(db, `game/cells/${idx}`), mySymbol);
+                await set(ref(db, "game/turn"), mySymbol === "X" ? "O" : "X");
+            }
         };
     });
 
     function checkWinner(b) {
-        const w = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        for(let c of w) if(b[c[0]] && b[c[0]]==b[c[1]] && b[c[0]]==b[c[2]]) return b[c[0]];
-        return null;
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        for(let c of wins) {
+            if(b[c[0]] && b[c[0]] === b[c[1]] && b[c[0]] === b[c[2]]) return b[c[0]];
+        }
+        return (Object.keys(b).length === 9) ? "DRAW" : null;
     }
 
     function showOverlay(w) {
         const o = document.getElementById("overlay");
         o.style.display = "flex";
-        o.innerHTML = w === mySymbol ? "<h1 style='color:gold'>MISSION ERFOLGREICH</h1>" : "<h1 style='color:red'>SYSTEMFEHLER: NIEDERLAGE</h1>";
-        setTimeout(() => { o.style.display="none"; resetGame(); }, 3000);
+        if(w === "DRAW") {
+            o.innerHTML = "<h1 style='color:white'>UNENTSCHIEDEN</h1>";
+        } else {
+            o.innerHTML = w === mySymbol ? "<h1 style='color:gold'>MISSION ERFOLGREICH<br>GEWONNEN</h1>" : "<h1 style='color:red'>SYSTEMFEHLER<br>NIEDERLAGE</h1>";
+        }
+        setTimeout(() => { o.style.display="none"; resetGame(); }, 4000);
     }
 
-    window.resetGame = () => { remove(ref(db, "game")); set(ref(db, "game/turn"), "X"); };
+    window.resetGame = () => { 
+        remove(ref(db, "game")); 
+        set(ref(db, "game/turn"), "X"); 
+    };
 </script>
 </body>
 </html>
