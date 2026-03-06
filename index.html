@@ -3,35 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Challenge Chat & Game</title>
+    <title>Neon Chat & Play</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: #121212; color: white; }
-        #chat-section { width: 300px; border-right: 1px solid #333; display: flex; flex-direction: column; background: #1e1e1e; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { background: #333; padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; word-break: break-word; }
-        #input-area { padding: 10px; display: flex; gap: 5px; background: #252525; }
-        input { flex: 1; padding: 8px; border-radius: 4px; border: none; }
-        button { cursor: pointer; background: #0070f3; color: white; border: none; border-radius: 4px; padding: 5px 10px; }
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #0a0a0c;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            margin: 0; 
+            background: var(--bg-dark); 
+            color: white;
+            overflow: hidden;
+        }
+
+        /* --- NEON CHAT STYLE --- */
+        #chat-section { 
+            width: 350px; 
+            border-right: 1px solid #222; 
+            display: flex; 
+            flex-direction: column; 
+            background: #111;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        }
         
-        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .grid { display: grid; grid-template-columns: repeat(3, 100px); gap: 10px; }
-        .cell { width: 100px; height: 100px; background: #2a2a2a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; cursor: pointer; }
-        .cell:hover { background: #3a3a3a; }
+        h3 { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); padding: 15px; margin: 0; border-bottom: 1px solid #222; }
+
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .msg { 
+            background: var(--glass); 
+            padding: 10px 15px; 
+            border-radius: 15px; 
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            font-size: 0.95rem;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        #input-area { padding: 20px; background: #111; display: flex; gap: 10px; }
+        
+        input { 
+            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; 
+            background: #000; color: white; outline: none;
+        }
+        input:focus { border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
+
+        button { 
+            cursor: pointer; background: var(--neon-blue); color: black; font-weight: bold;
+            border: none; border-radius: 8px; padding: 0 20px; transition: 0.3s;
+        }
+        button:hover { box-shadow: 0 0 15px var(--neon-blue); transform: scale(1.05); }
+
+        /* --- NEON GAME STYLE --- */
+        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        
+        .grid { display: grid; grid-template-columns: repeat(3, 120px); gap: 15px; }
+        
+        .cell { 
+            width: 120px; height: 120px; background: var(--glass); border: 2px solid #333;
+            border-radius: 15px; display: flex; align-items: center; justify-content: center; 
+            font-size: 3.5rem; cursor: pointer; transition: 0.3s;
+        }
+        
+        .cell:hover { border-color: var(--neon-pink); background: rgba(255, 0, 255, 0.05); }
+        
+        .cell.x-mark { color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
+        .cell.o-mark { color: var(--neon-pink); text-shadow: 0 0 15px var(--neon-pink); }
+
+        #status { font-size: 1.5rem; margin-bottom: 20px; color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div id="chat-section">
-    <h3 style="text-align: center;">💬 Chat</h3>
+    <h3>// NEON_CHAT</h3>
     <div id="messages"></div>
     <div id="input-area">
-        <input type="text" id="msgInput" placeholder="Nachricht...">
-        <button id="sendBtn">Senden</button>
+        <input type="text" id="msgInput" placeholder="Message..." autocomplete="off">
+        <button id="sendBtn">SEND</button>
     </div>
 </div>
 
 <div id="game-section">
-    <h2>Tic-Tac-Toe</h2>
+    <div id="status">PLAYER X TURN</div>
     <div class="grid" id="board">
         <div class="cell" data-index="0"></div>
         <div class="cell" data-index="1"></div>
@@ -43,15 +105,13 @@
         <div class="cell" data-index="7"></div>
         <div class="cell" data-index="8"></div>
     </div>
-    <button onclick="location.reload()" style="margin-top: 20px; background: #444;">Spiel Reset</button>
+    <button onclick="resetGame()" style="margin-top: 30px; background: none; border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 10px 20px;">RESET GAME</button>
 </div>
 
 <script type="module">
-    // Firebase Module laden
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, set, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
-    // DEIN KONFIGURATIONS-BLOCK
     const firebaseConfig = {
       apiKey: "AIzaSyDLFkWGvGxakLSoX8Vqh8qCunuzpwMOCfk",
       authDomain: "challenge-e77d2.firebaseapp.com",
@@ -59,8 +119,7 @@
       projectId: "challenge-e77d2",
       storageBucket: "challenge-e77d2.firebasestorage.app",
       messagingSenderId: "1059790573258",
-      appId: "1:1059790573258:web:00d1976d024c549406ee33",
-      measurementId: "G-PTHYL8KDSJ"
+      appId: "1:1059790573258:web:00d1976d024c549406ee33"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -68,11 +127,11 @@
     const chatRef = ref(db, "chat");
     const gameRef = ref(db, "game");
 
-    // CHAT FUNKTION
+    // --- CHAT LOGIK ---
     document.getElementById("sendBtn").onclick = () => {
         const input = document.getElementById("msgInput");
         if(input.value) {
-            push(chatRef, { text: input.value });
+            push(chatRef, { text: input.value, timestamp: Date.now() });
             input.value = "";
         }
     };
@@ -85,22 +144,39 @@
         document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
     });
 
-    // SPIEL FUNKTION
+    // --- SPIEL LOGIK (X und O Wechsel) ---
+    let currentTurn = "X";
+
+    onValue(ref(db, "game"), (snapshot) => {
+        const data = snapshot.val() || {};
+        const boardData = data.cells || {};
+        currentTurn = data.turn || "X";
+        
+        document.getElementById("status").innerText = `PLAYER ${currentTurn} TURN`;
+
+        document.querySelectorAll('.cell').forEach((cell, i) => {
+            const val = boardData[i] || "";
+            cell.innerText = val;
+            cell.className = "cell " + (val === "X" ? "x-mark" : val === "O" ? "o-mark" : "");
+        });
+    });
+
     document.querySelectorAll('.cell').forEach(cell => {
         cell.onclick = () => {
             const index = cell.getAttribute('data-index');
-            // Wir setzen einfach ein "X" oder "O" (hier erstmal nur X zum Testen)
-            set(ref(db, `game/cells/${index}`), "X");
+            // Nur ziehen, wenn Feld leer ist
+            if(cell.innerText === "") {
+                set(ref(db, `game/cells/${index}`), currentTurn);
+                // Zug wechseln
+                set(ref(db, `game/turn`), currentTurn === "X" ? "O" : "X");
+            }
         };
     });
 
-    onValue(ref(db, "game/cells"), (snapshot) => {
-        const boardData = snapshot.val() || {};
-        const cells = document.querySelectorAll('.cell');
-        cells.forEach((cell, i) => {
-            cell.innerText = boardData[i] || "";
-        });
-    });
+    window.resetGame = () => {
+        remove(ref(db, "game"));
+        set(ref(db, "game/turn"), "X");
+    };
 </script>
 
 </body>
