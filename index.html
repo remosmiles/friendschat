@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge Chat & Game</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: #121212; color: white; }
+        #chat-section { width: 300px; border-right: 1px solid #333; display: flex; flex-direction: column; background: #1e1e1e; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: #333; padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; word-break: break-word; }
+        #input-area { padding: 10px; display: flex; gap: 5px; background: #252525; }
+        input { flex: 1; padding: 8px; border-radius: 4px; border: none; }
+        button { cursor: pointer; background: #0070f3; color: white; border: none; border-radius: 4px; padding: 5px 10px; }
+        
+        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .grid { display: grid; grid-template-columns: repeat(3, 100px); gap: 10px; }
+        .cell { width: 100px; height: 100px; background: #2a2a2a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; cursor: pointer; }
+        .cell:hover { background: #3a3a3a; }
+    </style>
+</head>
+<body>
+
+<div id="chat-section">
+    <h3 style="text-align: center;">💬 Chat</h3>
+    <div id="messages"></div>
+    <div id="input-area">
+        <input type="text" id="msgInput" placeholder="Nachricht...">
+        <button id="sendBtn">Senden</button>
+    </div>
+</div>
+
+<div id="game-section">
+    <h2>Tic-Tac-Toe</h2>
+    <div class="grid" id="board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+    </div>
+    <button onclick="location.reload()" style="margin-top: 20px; background: #444;">Spiel Reset</button>
+</div>
+
+<script type="module">
+    // Firebase Module laden
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, set, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    // DEIN KONFIGURATIONS-BLOCK
+    const firebaseConfig = {
+      apiKey: "AIzaSyDLFkWGvGxakLSoX8Vqh8qCunuzpwMOCfk",
+      authDomain: "challenge-e77d2.firebaseapp.com",
+      databaseURL: "https://challenge-e77d2-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "challenge-e77d2",
+      storageBucket: "challenge-e77d2.firebasestorage.app",
+      messagingSenderId: "1059790573258",
+      appId: "1:1059790573258:web:00d1976d024c549406ee33",
+      measurementId: "G-PTHYL8KDSJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const chatRef = ref(db, "chat");
+    const gameRef = ref(db, "game");
+
+    // CHAT FUNKTION
+    document.getElementById("sendBtn").onclick = () => {
+        const input = document.getElementById("msgInput");
+        if(input.value) {
+            push(chatRef, { text: input.value });
+            input.value = "";
+        }
+    };
+
+    onChildAdded(chatRef, (data) => {
+        const msg = document.createElement("div");
+        msg.className = "msg";
+        msg.innerText = data.val().text;
+        document.getElementById("messages").appendChild(msg);
+        document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+    });
+
+    // SPIEL FUNKTION
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.onclick = () => {
+            const index = cell.getAttribute('data-index');
+            // Wir setzen einfach ein "X" oder "O" (hier erstmal nur X zum Testen)
+            set(ref(db, `game/cells/${index}`), "X");
+        };
+    });
+
+    onValue(ref(db, "game/cells"), (snapshot) => {
+        const boardData = snapshot.val() || {};
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach((cell, i) => {
+            cell.innerText = boardData[i] || "";
+        });
+    });
+</script>
+
+</body>
+</html>
