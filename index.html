@@ -3,42 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Pong v1.0</title>
+    <title>Matrix Pong Pro - Fixed</title>
     <style>
-        :root {
-            --matrix-green: #00ff41;
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --glass: rgba(0, 15, 0, 0.9);
-        }
-
-        body { 
-            font-family: 'Courier New', monospace; 
-            margin: 0; background: black; color: var(--matrix-green);
-            overflow: hidden; display: flex; height: 100vh;
-        }
-
+        :root { --matrix-green: #00ff41; --neon-blue: #00f3ff; --neon-pink: #ff00ff; }
+        body { font-family: 'Courier New', monospace; margin: 0; background: black; color: var(--matrix-green); display: flex; height: 100vh; overflow: hidden; }
         #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.2; }
-
-        /* Chat Bereich */
-        #chat-section { 
-            width: 350px; background: var(--glass); border-right: 1px solid var(--matrix-green);
-            display: flex; flex-direction: column; z-index: 10;
-        }
-        
-        #chat-header { padding: 15px; border-bottom: 1px solid var(--matrix-green); display: flex; justify-content: space-between; align-items: center; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { border: 1px solid rgba(0, 255, 65, 0.2); padding: 8px; border-radius: 4px; background: rgba(0, 20, 0, 0.6); font-size: 0.85rem; }
-
-        #input-area { padding: 15px; background: black; display: flex; gap: 10px; border-top: 1px solid var(--matrix-green); }
-        input { flex: 1; padding: 10px; background: #000; border: 1px solid var(--matrix-green); color: var(--matrix-green); outline: none; }
-
-        /* Game Bereich */
-        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
-        #pong-canvas { border: 2px solid var(--matrix-green); background: rgba(0,0,0,0.9); box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); }
-        
-        #status-bar { text-align: center; margin-bottom: 10px; }
-        button { cursor: pointer; background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 5px 10px; font-family: inherit; margin-top: 10px; }
+        #chat-section { width: 320px; background: rgba(0, 15, 0, 0.9); border-right: 1px solid var(--matrix-green); display: flex; flex-direction: column; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; }
+        .msg { border: 1px solid rgba(0, 255, 65, 0.2); padding: 5px; background: rgba(0, 20, 0, 0.6); }
+        #input-area { padding: 10px; border-top: 1px solid var(--matrix-green); display: flex; }
+        input { flex: 1; background: #000; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 8px; outline: none; }
+        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas#pong-canvas { border: 2px solid var(--matrix-green); background: #000; cursor: none; }
+        #status { margin-bottom: 10px; text-align: center; }
+        button { background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); cursor: pointer; padding: 5px 10px; font-family: inherit; }
         button:hover { background: var(--matrix-green); color: black; }
     </style>
 </head>
@@ -47,29 +25,23 @@
 <canvas id="matrix-canvas"></canvas>
 
 <div id="chat-section">
-    <div id="chat-header">
-        <span>> COMM_LINK</span>
-        <button onclick="clearChat()">PURGE</button>
-    </div>
+    <div style="padding:10px; border-bottom:1px solid var(--matrix-green); font-weight:bold;">> TERMINAL_COMM</div>
     <div id="messages"></div>
-    <div id="input-area">
-        <input type="text" id="msgInput" placeholder="Message..." autocomplete="off">
-    </div>
+    <div id="input-area"><input type="text" id="msgInput" placeholder="Message..." autocomplete="off"></div>
 </div>
 
 <div id="game-section">
-    <div id="status-bar">
-        <div id="player-display">IDENTIFYING...</div>
-        <div id="score-display" style="font-size: 1.5rem; margin: 10px 0;">0 : 0</div>
+    <div id="status">
+        <div id="player-id">Lade System...</div>
+        <h2 id="score">0 : 0</h2>
     </div>
     <canvas id="pong-canvas" width="600" height="400"></canvas>
-    <div style="margin-top: 10px; font-size: 0.8rem;">STEUERUNG: MAUS ODER TOUCH</div>
-    <button onclick="resetScore()">RESET SCORE</button>
+    <button onclick="location.reload()">RE-SYNC SYSTEM</button>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, set, onValue, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDLFkWGvGxakLSoX8Vqh8qCunuzpwMOCfk",
@@ -84,128 +56,97 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- SETUP ---
-    let userName = localStorage.getItem("userName") || prompt("Hacker-Name:") || "User_" + Math.floor(Math.random()*999);
-    localStorage.setItem("userName", userName);
-
-    let mySide = sessionStorage.getItem("mySide");
-    if(!mySide) {
-        mySide = prompt("Wähle deine Seite (L oder R):").toUpperCase();
-        if(mySide !== "L" && mySide !== "R") mySide = "L";
-        sessionStorage.setItem("mySide", mySide);
-    }
-    document.getElementById("player-display").innerText = `OPERATOR: ${userName} [${mySide === 'L' ? 'LINKS' : 'RECHTS'}]`;
+    // --- IDENTITY ---
+    let mySide = sessionStorage.getItem("mySide") || prompt("Wähle Seite: L (Links) oder R (Rechts)").toUpperCase();
+    if (mySide !== "L" && mySide !== "R") mySide = "L";
+    sessionStorage.setItem("mySide", mySide);
+    document.getElementById("player-id").innerText = `OPERATOR: [SIDE_${mySide}]`;
 
     // --- MATRIX BG ---
-    const mCanvas = document.getElementById('matrix-canvas');
-    const mCtx = mCanvas.getContext('2d');
-    mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
-    const drops = Array(Math.floor(mCanvas.width/16)).fill(1);
-    function drawMatrix() {
-        mCtx.fillStyle = "rgba(0,0,0,0.05)"; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
+    const mC = document.getElementById('matrix-canvas');
+    const mCtx = mC.getContext('2d');
+    mC.width = window.innerWidth; mC.height = window.innerHeight;
+    const drops = Array(Math.floor(mC.width/16)).fill(1);
+    function drawM() {
+        mCtx.fillStyle = "rgba(0,0,0,0.05)"; mCtx.fillRect(0,0,mC.width,mC.height);
         mCtx.fillStyle = "#0F0"; mCtx.font = "16px arial";
         drops.forEach((y, i) => {
             mCtx.fillText(String.fromCharCode(0x30A0 + Math.random()*96), i*16, y*16);
-            if(y*16 > mCanvas.height && Math.random() > 0.975) drops[i] = 0;
-            drops[i]++;
+            if(y*16 > mC.height && Math.random() > 0.9) drops[i] = 0; drops[i]++;
         });
     }
-    setInterval(drawMatrix, 35);
+    setInterval(drawM, 40);
 
     // --- CHAT ---
-    const msgInput = document.getElementById("msgInput");
-    msgInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter" && msgInput.value.trim()) {
-            push(ref(db, "chat"), { sender: userName, text: msgInput.value, side: mySide });
-            msgInput.value = "";
+    const msgI = document.getElementById("msgInput");
+    msgI.addEventListener("keypress", (e) => {
+        if(e.key === "Enter" && msgI.value) {
+            push(ref(db, "chat"), { s: mySide, t: msgI.value });
+            msgI.value = "";
         }
     });
-    onChildAdded(ref(db, "chat"), (snap) => {
-        const v = snap.val();
+    onChildAdded(ref(db, "chat"), (s) => {
+        const d = s.val();
         const div = document.createElement("div");
         div.className = "msg";
-        div.innerHTML = `<span style="color:${v.side === 'L' ? 'var(--neon-blue)' : 'var(--neon-pink)'}">${v.sender}:</span> ${v.text}`;
+        div.innerHTML = `<span style="color:${d.s==='L'?'#00f3ff':'#ff00ff'}">${d.s}:</span> ${d.t}`;
         document.getElementById("messages").appendChild(div);
         document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
     });
-    window.clearChat = () => remove(ref(db, "chat"));
-    onValue(ref(db, "chat"), (snap) => { if(!snap.exists()) document.getElementById("messages").innerHTML = ""; });
 
-    // --- PONG LOGIK ---
-    const pCanvas = document.getElementById("pong-canvas");
-    const pCtx = pCanvas.getContext("2d");
+    // --- PONG ENGINE ---
+    const canvas = document.getElementById("pong-canvas");
+    const ctx = canvas.getContext("2d");
     
-    // Maussteuerung
-    pCanvas.addEventListener("mousemove", (e) => {
-        const rect = pCanvas.getBoundingClientRect();
-        const mouseY = e.clientY - rect.top;
-        set(ref(db, `pong/paddles/${mySide}`), mouseY);
+    // Maussteuerung für das Paddle
+    canvas.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        set(ref(db, `pong/paddles/${mySide}`), y);
     });
 
-    // Ball & Paddles zeichnen
+    // Darstellung (für beide Spieler)
     onValue(ref(db, "pong"), (snap) => {
         const data = snap.val() || {};
         const ball = data.ball || { x: 300, y: 200 };
-        const paddles = data.paddles || { L: 150, R: 150 };
-        const score = data.score || { L: 0, R: 0 };
+        const p = data.paddles || { L: 200, R: 200 };
+        const s = data.score || { L: 0, R: 0 };
 
-        document.getElementById("score-display").innerText = `${score.L} : ${score.R}`;
+        document.getElementById("score").innerText = `${s.L} : ${s.R}`;
 
-        // Clear
-        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-        
-        // Netz
-        pCtx.strokeStyle = "rgba(0, 255, 65, 0.2)";
-        pCtx.setLineDash([5, 15]);
-        pCtx.beginPath(); pCtx.moveTo(300,0); pCtx.lineTo(300,400); pCtx.stroke();
-
+        ctx.clearRect(0,0,600,400);
         // Paddles
-        pCtx.fillStyle = "var(--neon-blue)";
-        pCtx.fillRect(10, paddles.L - 40, 10, 80); // Links
-        pCtx.fillStyle = "var(--neon-pink)";
-        pCtx.fillRect(580, paddles.R - 40, 10, 80); // Rechts
-
+        ctx.fillStyle = "#00f3ff"; ctx.fillRect(10, p.L - 40, 10, 80);
+        ctx.fillStyle = "#ff00ff"; ctx.fillRect(580, p.R - 40, 10, 80);
         // Ball
-        pCtx.fillStyle = "white";
-        pCtx.shadowBlur = 10; pCtx.shadowColor = "white";
-        pCtx.beginPath(); pCtx.arc(ball.x, ball.y, 8, 0, Math.PI*2); pCtx.fill();
-        pCtx.shadowBlur = 0;
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 8, 0, Math.PI*2); ctx.fill();
     });
 
-    // Ball-Physik (Nur der linke Spieler berechnet den Ball, um Konflikte zu vermeiden)
+    // BALL-MOTOR (Nur Spieler L berechnet!)
     if (mySide === "L") {
-        let ballX = 300, ballY = 200, dx = 4, dy = 4;
-        let scoreL = 0, scoreR = 0;
+        let bx = 300, by = 200, dx = 5, dy = 3;
+        let sl = 0, sr = 0;
 
-        setInterval(() => {
-            ballX += dx; ballY += dy;
+        setInterval(async () => {
+            bx += dx; by += dy;
 
-            // Wände
-            if(ballY < 10 || ballY > 390) dy *= -1;
+            // Wand-Kollision
+            if (by < 10 || by > 390) dy *= -1;
 
-            // Paddles Abfrage (lokal zur Performance)
-            get(ref(db, "pong/paddles")).then(snap => {
-                const p = snap.val() || { L: 150, R: 150 };
-                // Links Kollision
-                if(ballX < 30 && ballY > p.L - 45 && ballY < p.L + 45) dx = Math.abs(dx);
-                // Rechts Kollision
-                if(ballX > 570 && ballY > p.R - 45 && ballY < p.R + 45) dx = -Math.abs(dx);
-            });
+            // Paddle-Kollision
+            const pSnap = await get(ref(db, "pong/paddles"));
+            const p = pSnap.val() || { L: 200, R: 200 };
 
-            // Aus
-            if(ballX < 0) { scoreR++; resetBall(); }
-            if(ballX > 600) { scoreL++; resetBall(); }
+            if (bx < 30 && by > p.L - 45 && by < p.L + 45) dx = Math.abs(dx);
+            if (bx > 570 && by > p.R - 45 && by < p.R + 45) dx = -Math.abs(dx);
 
-            function resetBall() {
-                ballX = 300; ballY = 200; dx *= -1;
-                set(ref(db, "pong/score"), { L: scoreL, R: scoreR });
-            }
+            // Punkt erzielt
+            if (bx < 0) { sr++; bx = 300; by = 200; dx = 5; set(ref(db, "pong/score"), { L: sl, R: sr }); }
+            if (bx > 600) { sl++; bx = 300; by = 200; dx = -5; set(ref(db, "pong/score"), { L: sl, R: sr }); }
 
-            set(ref(db, "pong/ball"), { x: ballX, y: ballY });
+            set(ref(db, "pong/ball"), { x: bx, y: by });
         }, 30);
     }
-
-    window.resetScore = () => set(ref(db, "pong/score"), { L: 0, R: 0 });
 </script>
 </body>
 </html>
