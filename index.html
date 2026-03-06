@@ -3,97 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Chat & Play</title>
+    <title>Matrix Chat & Play</title>
     <style>
         :root {
+            --matrix-green: #00ff41;
             --neon-blue: #00f3ff;
             --neon-pink: #ff00ff;
-            --bg-dark: #0a0a0c;
-            --glass: rgba(255, 255, 255, 0.05);
         }
 
         body { 
-            font-family: 'Segoe UI', sans-serif; 
-            display: flex; 
-            height: 100vh; 
+            font-family: 'Courier New', monospace; 
             margin: 0; 
-            background: var(--bg-dark); 
-            color: white;
+            background: black; 
+            color: var(--matrix-green);
             overflow: hidden;
+            display: flex;
+            height: 100vh;
         }
 
-        /* --- NEON CHAT STYLE --- */
+        /* Matrix Canvas Hintergrund */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Layout */
         #chat-section { 
             width: 350px; 
-            border-right: 1px solid #222; 
+            background: rgba(0, 20, 0, 0.8);
+            border-right: 1px solid var(--matrix-green);
             display: flex; 
             flex-direction: column; 
-            background: #111;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-        }
-        
-        h3 { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); padding: 15px; margin: 0; border-bottom: 1px solid #222; }
-
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        
-        .msg { 
-            background: var(--glass); 
-            padding: 10px 15px; 
-            border-radius: 15px; 
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            font-size: 0.95rem;
-            max-width: 85%;
-            animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
-        #input-area { padding: 20px; background: #111; display: flex; gap: 10px; }
-        
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { border: 1px solid var(--matrix-green); padding: 8px; border-radius: 5px; background: rgba(0, 40, 0, 0.5); font-size: 0.9rem; }
+
+        #input-area { padding: 20px; display: flex; gap: 10px; }
         input { 
-            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; 
-            background: #000; color: white; outline: none;
+            flex: 1; padding: 10px; background: black; border: 1px solid var(--matrix-green); 
+            color: var(--matrix-green); outline: none;
         }
-        input:focus { border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
 
-        button { 
-            cursor: pointer; background: var(--neon-blue); color: black; font-weight: bold;
-            border: none; border-radius: 8px; padding: 0 20px; transition: 0.3s;
-        }
-        button:hover { box-shadow: 0 0 15px var(--neon-blue); transform: scale(1.05); }
-
-        /* --- NEON GAME STYLE --- */
-        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
         .grid { display: grid; grid-template-columns: repeat(3, 120px); gap: 15px; }
-        
         .cell { 
-            width: 120px; height: 120px; background: var(--glass); border: 2px solid #333;
-            border-radius: 15px; display: flex; align-items: center; justify-content: center; 
-            font-size: 3.5rem; cursor: pointer; transition: 0.3s;
+            width: 120px; height: 120px; border: 2px solid var(--matrix-green);
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 3.5rem; cursor: pointer; background: rgba(0, 0, 0, 0.7);
         }
-        
-        .cell:hover { border-color: var(--neon-pink); background: rgba(255, 0, 255, 0.05); }
-        
         .cell.x-mark { color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
         .cell.o-mark { color: var(--neon-pink); text-shadow: 0 0 15px var(--neon-pink); }
 
-        #status { font-size: 1.5rem; margin-bottom: 20px; color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #status { font-size: 1.2rem; margin-bottom: 20px; text-transform: uppercase; }
+        #player-id { position: absolute; top: 10px; right: 20px; font-size: 0.8rem; opacity: 0.7; }
     </style>
 </head>
 <body>
 
+<canvas id="matrix-canvas"></canvas>
+<div id="player-id">IDENTIFIZIERE...</div>
+
 <div id="chat-section">
-    <h3>// NEON_CHAT</h3>
+    <h3 style="padding: 15px;">> SYSTEM_CHAT</h3>
     <div id="messages"></div>
     <div id="input-area">
-        <input type="text" id="msgInput" placeholder="Message..." autocomplete="off">
-        <button id="sendBtn">SEND</button>
+        <input type="text" id="msgInput" placeholder="Befehl eingeben..." autocomplete="off">
     </div>
 </div>
 
 <div id="game-section">
-    <div id="status">PLAYER X TURN</div>
+    <div id="status">Warte auf Verbindung...</div>
     <div class="grid" id="board">
         <div class="cell" data-index="0"></div>
         <div class="cell" data-index="1"></div>
@@ -105,7 +92,7 @@
         <div class="cell" data-index="7"></div>
         <div class="cell" data-index="8"></div>
     </div>
-    <button onclick="resetGame()" style="margin-top: 30px; background: none; border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 10px 20px;">RESET GAME</button>
+    <button onclick="resetGame()" style="margin-top: 30px; background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; cursor: pointer;">REBOOT SYSTEM</button>
 </div>
 
 <script type="module">
@@ -124,60 +111,82 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const chatRef = ref(db, "chat");
-    const gameRef = ref(db, "game");
+    
+    // --- SPIELER ZUWEISUNG ---
+    // Wir nutzen den SessionStorage: Wer zuerst lädt, ist X, wer danach kommt O.
+    let mySymbol = sessionStorage.getItem("mySymbol");
+    if (!mySymbol) {
+        mySymbol = Math.random() > 0.5 ? "X" : "O"; // Zufällige Zuweisung beim ersten Mal
+        sessionStorage.setItem("mySymbol", mySymbol);
+    }
+    document.getElementById("player-id").innerText = `DEIN_SYMBOL: ${mySymbol}`;
 
-    // --- CHAT LOGIK ---
-    document.getElementById("sendBtn").onclick = () => {
-        const input = document.getElementById("msgInput");
-        if(input.value) {
-            push(chatRef, { text: input.value, timestamp: Date.now() });
-            input.value = "";
+    // --- MATRIX HINTERGRUND ---
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0F0";
+        ctx.font = fontSize + "px arial";
+        for (let i = 0; i < drops.length; i++) {
+            const text = letters[Math.floor(Math.random() * letters.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
         }
-    };
+    }
+    setInterval(drawMatrix, 33);
 
-    onChildAdded(chatRef, (data) => {
-        const msg = document.createElement("div");
-        msg.className = "msg";
-        msg.innerText = data.val().text;
-        document.getElementById("messages").appendChild(msg);
+    // --- CHAT MIT ENTER ---
+    const msgInput = document.getElementById("msgInput");
+    msgInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && msgInput.value) {
+            push(ref(db, "chat"), { text: `[${mySymbol}]: ${msgInput.value}` });
+            msgInput.value = "";
+        }
+    });
+
+    onChildAdded(ref(db, "chat"), (data) => {
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerText = data.val().text;
+        document.getElementById("messages").appendChild(div);
         document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
     });
 
-    // --- SPIEL LOGIK (X und O Wechsel) ---
-    let currentTurn = "X";
-
-    onValue(ref(db, "game"), (snapshot) => {
-        const data = snapshot.val() || {};
-        const boardData = data.cells || {};
-        currentTurn = data.turn || "X";
+    // --- SPIEL LOGIK ---
+    onValue(ref(db, "game"), (snap) => {
+        const data = snap.val() || { turn: "X", cells: {} };
+        const turn = data.turn || "X";
+        document.getElementById("status").innerText = turn === mySymbol ? "DEIN ZUG" : "WARTE AUF GEGNER...";
         
-        document.getElementById("status").innerText = `PLAYER ${currentTurn} TURN`;
-
         document.querySelectorAll('.cell').forEach((cell, i) => {
-            const val = boardData[i] || "";
-            cell.innerText = val;
+            const val = data.cells ? data.cells[i] : "";
+            cell.innerText = val || "";
             cell.className = "cell " + (val === "X" ? "x-mark" : val === "O" ? "o-mark" : "");
+        });
+
+        // Klick-Logik
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.onclick = () => {
+                if (turn === mySymbol && cell.innerText === "") {
+                    const index = cell.getAttribute('data-index');
+                    set(ref(db, `game/cells/${index}`), mySymbol);
+                    set(ref(db, "game/turn"), mySymbol === "X" ? "O" : "X");
+                }
+            };
         });
     });
 
-    document.querySelectorAll('.cell').forEach(cell => {
-        cell.onclick = () => {
-            const index = cell.getAttribute('data-index');
-            // Nur ziehen, wenn Feld leer ist
-            if(cell.innerText === "") {
-                set(ref(db, `game/cells/${index}`), currentTurn);
-                // Zug wechseln
-                set(ref(db, `game/turn`), currentTurn === "X" ? "O" : "X");
-            }
-        };
-    });
-
-    window.resetGame = () => {
-        remove(ref(db, "game"));
-        set(ref(db, "game/turn"), "X");
-    };
+    window.resetGame = () => remove(ref(db, "game"));
 </script>
-
 </body>
 </html>
