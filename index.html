@@ -3,45 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Pong Pro - Fixed</title>
+    <title>Magic Matrix Terminal</title>
     <style>
-        :root { --matrix-green: #00ff41; --neon-blue: #00f3ff; --neon-pink: #ff00ff; }
-        body { font-family: 'Courier New', monospace; margin: 0; background: black; color: var(--matrix-green); display: flex; height: 100vh; overflow: hidden; }
-        #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.2; }
-        #chat-section { width: 320px; background: rgba(0, 15, 0, 0.9); border-right: 1px solid var(--matrix-green); display: flex; flex-direction: column; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; }
-        .msg { border: 1px solid rgba(0, 255, 65, 0.2); padding: 5px; background: rgba(0, 20, 0, 0.6); }
-        #input-area { padding: 10px; border-top: 1px solid var(--matrix-green); display: flex; }
-        input { flex: 1; background: #000; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 8px; outline: none; }
-        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas#pong-canvas { border: 2px solid var(--matrix-green); background: #000; cursor: none; }
-        #status { margin-bottom: 10px; text-align: center; }
-        button { background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); cursor: pointer; padding: 5px 10px; font-family: inherit; }
-        button:hover { background: var(--matrix-green); color: black; }
+        :root {
+            --magic-green: #00ff8c;
+            --magic-purple: #bc00ff;
+            --magic-cyan: #00d9ff;
+            --bg: #050505;
+        }
+
+        body {
+            margin: 0; padding: 0; background: var(--bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--magic-green); display: flex; height: 100vh; overflow: hidden;
+        }
+
+        canvas#matrix { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3; }
+
+        /* --- Layout --- */
+        #side-panel {
+            width: 350px; background: rgba(0, 20, 15, 0.8);
+            backdrop-filter: blur(10px); border-right: 2px solid var(--magic-green);
+            display: flex; flex-direction: column; box-shadow: 5px 0 20px rgba(0, 255, 140, 0.2);
+        }
+
+        #main-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+
+        /* --- Chat --- */
+        #chat-header { padding: 20px; border-bottom: 1px solid var(--magic-green); font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px var(--magic-green); }
+        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; }
+        .msg { background: rgba(0, 255, 140, 0.05); border-left: 3px solid var(--magic-cyan); padding: 10px; border-radius: 0 10px 10px 0; animation: glow 2s infinite alternate; }
+        #input-container { padding: 20px; background: rgba(0,0,0,0.5); }
+        input { width: 90%; background: transparent; border: 1px solid var(--magic-green); color: white; padding: 10px; outline: none; border-radius: 5px; }
+
+        /* --- Game --- */
+        .board { display: grid; grid-template-columns: repeat(3, 120px); gap: 15px; }
+        .cell {
+            width: 120px; height: 120px; border: 2px solid var(--magic-purple);
+            background: rgba(188, 0, 255, 0.05); border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3.5rem; cursor: pointer; transition: 0.3s;
+        }
+        .cell:hover { background: rgba(188, 0, 255, 0.2); box-shadow: 0 0 20px var(--magic-purple); }
+        .cell.x { color: var(--magic-cyan); text-shadow: 0 0 20px var(--magic-cyan); }
+        .cell.o { color: var(--magic-purple); text-shadow: 0 0 20px var(--magic-purple); }
+
+        #status { font-size: 1.5rem; margin-bottom: 30px; text-shadow: 0 0 15px gold; color: gold; }
+        
+        button { background: transparent; border: 1px solid var(--magic-green); color: var(--magic-green); padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-top: 20px; }
+        button:hover { background: var(--magic-green); color: black; box-shadow: 0 0 15px var(--magic-green); }
+
+        @keyframes glow { from { border-color: var(--magic-cyan); } to { border-color: var(--magic-purple); } }
     </style>
 </head>
 <body>
 
-<canvas id="matrix-canvas"></canvas>
+<canvas id="matrix"></canvas>
 
-<div id="chat-section">
-    <div style="padding:10px; border-bottom:1px solid var(--matrix-green); font-weight:bold;">> TERMINAL_COMM</div>
+<div id="side-panel">
+    <div id="chat-header">> MAGIC_COMM_LINK</div>
     <div id="messages"></div>
-    <div id="input-area"><input type="text" id="msgInput" placeholder="Message..." autocomplete="off"></div>
+    <div id="input-container">
+        <input type="text" id="chatInput" placeholder="Sende eine Zauberformel..." autocomplete="off">
+    </div>
+    <button onclick="localStorage.clear(); sessionStorage.clear(); location.reload();" style="margin: 10px;">RESET IDENTITY</button>
 </div>
 
-<div id="game-section">
-    <div id="status">
-        <div id="player-id">Lade System...</div>
-        <h2 id="score">0 : 0</h2>
+<div id="main-area">
+    <div id="status">Warte auf Verbindung...</div>
+    <div class="board" id="board">
+        <div class="cell" data-i="0"></div><div class="cell" data-i="1"></div><div class="cell" data-i="2"></div>
+        <div class="cell" data-i="3"></div><div class="cell" data-i="4"></div><div class="cell" data-i="5"></div>
+        <div class="cell" data-i="6"></div><div class="cell" data-i="7"></div><div class="cell" data-i="8"></div>
     </div>
-    <canvas id="pong-canvas" width="600" height="400"></canvas>
-    <button onclick="location.reload()">RE-SYNC SYSTEM</button>
+    <button onclick="resetGame()">RESET BOARD</button>
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, set, onValue, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push, serverTimestamp, onChildAdded, remove, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDLFkWGvGxakLSoX8Vqh8qCunuzpwMOCfk",
@@ -56,97 +96,85 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- IDENTITY ---
-    let mySide = sessionStorage.getItem("mySide") || prompt("Wähle Seite: L (Links) oder R (Rechts)").toUpperCase();
-    if (mySide !== "L" && mySide !== "R") mySide = "L";
-    sessionStorage.setItem("mySide", mySide);
-    document.getElementById("player-id").innerText = `OPERATOR: [SIDE_${mySide}]`;
+    // --- Identität ---
+    let mySym = sessionStorage.getItem("sym");
+    if(!mySym) {
+        mySym = prompt("Wähle deine Macht: X oder O").toUpperCase();
+        if(mySym !== 'X' && mySym !== 'O') mySym = 'X';
+        sessionStorage.setItem("sym", mySym);
+    }
+    const myName = localStorage.getItem("name") || prompt("Dein Name, Magier:") || "Unbekannt";
+    localStorage.setItem("name", myName);
 
-    // --- MATRIX BG ---
-    const mC = document.getElementById('matrix-canvas');
-    const mCtx = mC.getContext('2d');
-    mC.width = window.innerWidth; mC.height = window.innerHeight;
-    const drops = Array(Math.floor(mC.width/16)).fill(1);
-    function drawM() {
-        mCtx.fillStyle = "rgba(0,0,0,0.05)"; mCtx.fillRect(0,0,mC.width,mC.height);
-        mCtx.fillStyle = "#0F0"; mCtx.font = "16px arial";
+    // --- Matrix Effekt ---
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const drops = Array(Math.floor(canvas.width/20)).fill(1);
+    function draw() {
+        ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#0f8"; ctx.font = "20px monospace";
         drops.forEach((y, i) => {
-            mCtx.fillText(String.fromCharCode(0x30A0 + Math.random()*96), i*16, y*16);
-            if(y*16 > mC.height && Math.random() > 0.9) drops[i] = 0; drops[i]++;
+            const text = String.fromCharCode(0x30A0 + Math.random()*96);
+            ctx.fillText(text, i*20, y*20);
+            if(y*20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
         });
     }
-    setInterval(drawM, 40);
+    setInterval(draw, 50);
 
-    // --- CHAT ---
-    const msgI = document.getElementById("msgInput");
-    msgI.addEventListener("keypress", (e) => {
-        if(e.key === "Enter" && msgI.value) {
-            push(ref(db, "chat"), { s: mySide, t: msgI.value });
-            msgI.value = "";
+    // --- Chat ---
+    const chatInput = document.getElementById("chatInput");
+    chatInput.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" && chatInput.value) {
+            push(ref(db, "chat"), { n: myName, t: chatInput.value, s: mySym, time: serverTimestamp() });
+            chatInput.value = "";
         }
     });
-    onChildAdded(ref(db, "chat"), (s) => {
-        const d = s.val();
+
+    onChildAdded(ref(db, "chat"), (snap) => {
+        const d = snap.val();
         const div = document.createElement("div");
         div.className = "msg";
-        div.innerHTML = `<span style="color:${d.s==='L'?'#00f3ff':'#ff00ff'}">${d.s}:</span> ${d.t}`;
+        div.innerHTML = `<b style="color:${d.s==='X'?'var(--magic-cyan)':'var(--magic-purple)'}">${d.n}:</b> ${d.t}`;
         document.getElementById("messages").appendChild(div);
         document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
     });
 
-    // --- PONG ENGINE ---
-    const canvas = document.getElementById("pong-canvas");
-    const ctx = canvas.getContext("2d");
+    // --- Game ---
+    const cells = document.querySelectorAll(".cell");
+    onValue(ref(db, "game"), (snap) => {
+        const data = snap.val() || { turn: "X", cells: {} };
+        const board = data.cells || {};
+        const turn = data.turn || "X";
+
+        document.getElementById("status").innerText = (turn === mySym) ? ">> DU BIST DRAN <<" : "GEGNER WIRKT ZAUBER...";
+        
+        cells.forEach((cell, i) => {
+            const val = board[i] || "";
+            cell.innerText = val;
+            cell.className = "cell " + (val.toLowerCase());
+        });
+    });
+
+    cells.forEach(cell => {
+        cell.onclick = async () => {
+            const snap = await get(ref(db, "game"));
+            const data = snap.val() || { turn: "X", cells: {} };
+            if(data.turn === mySym && !data.cells[cell.dataset.i]) {
+                set(ref(db, `game/cells/${cell.dataset.i}`), mySym);
+                set(ref(db, "game/turn"), mySym === "X" ? "O" : "X");
+            }
+        };
+    });
+
+    window.resetGame = () => {
+        remove(ref(db, "game"));
+        set(ref(db, "game/turn"), "X");
+        remove(ref(db, "chat"));
+    };
     
-    // Maussteuerung für das Paddle
-    canvas.addEventListener("mousemove", (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const y = e.clientY - rect.top;
-        set(ref(db, `pong/paddles/${mySide}`), y);
-    });
-
-    // Darstellung (für beide Spieler)
-    onValue(ref(db, "pong"), (snap) => {
-        const data = snap.val() || {};
-        const ball = data.ball || { x: 300, y: 200 };
-        const p = data.paddles || { L: 200, R: 200 };
-        const s = data.score || { L: 0, R: 0 };
-
-        document.getElementById("score").innerText = `${s.L} : ${s.R}`;
-
-        ctx.clearRect(0,0,600,400);
-        // Paddles
-        ctx.fillStyle = "#00f3ff"; ctx.fillRect(10, p.L - 40, 10, 80);
-        ctx.fillStyle = "#ff00ff"; ctx.fillRect(580, p.R - 40, 10, 80);
-        // Ball
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 8, 0, Math.PI*2); ctx.fill();
-    });
-
-    // BALL-MOTOR (Nur Spieler L berechnet!)
-    if (mySide === "L") {
-        let bx = 300, by = 200, dx = 5, dy = 3;
-        let sl = 0, sr = 0;
-
-        setInterval(async () => {
-            bx += dx; by += dy;
-
-            // Wand-Kollision
-            if (by < 10 || by > 390) dy *= -1;
-
-            // Paddle-Kollision
-            const pSnap = await get(ref(db, "pong/paddles"));
-            const p = pSnap.val() || { L: 200, R: 200 };
-
-            if (bx < 30 && by > p.L - 45 && by < p.L + 45) dx = Math.abs(dx);
-            if (bx > 570 && by > p.R - 45 && by < p.R + 45) dx = -Math.abs(dx);
-
-            // Punkt erzielt
-            if (bx < 0) { sr++; bx = 300; by = 200; dx = 5; set(ref(db, "pong/score"), { L: sl, R: sr }); }
-            if (bx > 600) { sl++; bx = 300; by = 200; dx = -5; set(ref(db, "pong/score"), { L: sl, R: sr }); }
-
-            set(ref(db, "pong/ball"), { x: bx, y: by });
-        }, 30);
-    }
+    window.clearChat = () => remove(ref(db, "chat"));
 </script>
 </body>
 </html>
