@@ -1,192 +1,87 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Chat & Play</title>
-    <style>
-        :root {
-            --matrix-green: #00ff41;
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-        }
-
-        body { 
-            font-family: 'Courier New', monospace; 
-            margin: 0; 
-            background: black; 
-            color: var(--matrix-green);
-            overflow: hidden;
-            display: flex;
-            height: 100vh;
-        }
-
-        /* Matrix Canvas Hintergrund */
-        #matrix-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.3;
-        }
-
-        /* Layout */
-        #chat-section { 
-            width: 350px; 
-            background: rgba(0, 20, 0, 0.8);
-            border-right: 1px solid var(--matrix-green);
-            display: flex; 
-            flex-direction: column; 
-            backdrop-filter: blur(5px);
-        }
-
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { border: 1px solid var(--matrix-green); padding: 8px; border-radius: 5px; background: rgba(0, 40, 0, 0.5); font-size: 0.9rem; }
-
-        #input-area { padding: 20px; display: flex; gap: 10px; }
-        input { 
-            flex: 1; padding: 10px; background: black; border: 1px solid var(--matrix-green); 
-            color: var(--matrix-green); outline: none;
-        }
-
-        #game-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        .grid { display: grid; grid-template-columns: repeat(3, 120px); gap: 15px; }
-        .cell { 
-            width: 120px; height: 120px; border: 2px solid var(--matrix-green);
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 3.5rem; cursor: pointer; background: rgba(0, 0, 0, 0.7);
-        }
-        .cell.x-mark { color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
-        .cell.o-mark { color: var(--neon-pink); text-shadow: 0 0 15px var(--neon-pink); }
-
-        #status { font-size: 1.2rem; margin-bottom: 20px; text-transform: uppercase; }
-        #player-id { position: absolute; top: 10px; right: 20px; font-size: 0.8rem; opacity: 0.7; }
-    </style>
-</head>
-<body>
-
-<canvas id="matrix-canvas"></canvas>
-<div id="player-id">IDENTIFIZIERE...</div>
-
-<div id="chat-section">
-    <h3 style="padding: 15px;">> SYSTEM_CHAT</h3>
-    <div id="messages"></div>
-    <div id="input-area">
-        <input type="text" id="msgInput" placeholder="Befehl eingeben..." autocomplete="off">
-    </div>
+<div id="player-id">
+    IDENTIFIZIERE... 
+    <span id="opponent-status" style="margin-left:10px; font-size: 0.7rem;">
+        GEGNER: <span id="status-dot" style="color: grey;">● OFFLINE</span>
+    </span>
 </div>
 
-<div id="game-section">
-    <div id="status">Warte auf Verbindung...</div>
-    <div class="grid" id="board">
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
-    </div>
-    <button onclick="resetGame()" style="margin-top: 30px; background: none; border: 1px solid var(--matrix-green); color: var(--matrix-green); padding: 10px; cursor: pointer;">REBOOT SYSTEM</button>
-</div>
+<style>
+    .winner-glow { box-shadow: 0 0 50px gold !important; border-color: gold !important; }
+    .loser-glow { box-shadow: 0 0 50px red !important; border-color: red !important; }
+    #overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 100; flex-direction: column;
+        align-items: center; justify-content: center; font-size: 3rem; text-shadow: 0 0 20px white;
+    }
+</style>
+
+<div id="overlay"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDLFkWGvGxakLSoX8Vqh8qCunuzpwMOCfk",
-      authDomain: "challenge-e77d2.firebaseapp.com",
-      databaseURL: "https://challenge-e77d2-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "challenge-e77d2",
-      storageBucket: "challenge-e77d2.firebasestorage.app",
-      messagingSenderId: "1059790573258",
-      appId: "1:1059790573258:web:00d1976d024c549406ee33"
-    };
-
+    // ... (Deine Firebase Config bleibt gleich)
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
+    // --- ONLINE STATUS LOGIK ---
+    const myStatusRef = ref(db, `status/${mySymbol}`);
     
-    // --- SPIELER ZUWEISUNG ---
-    // Wir nutzen den SessionStorage: Wer zuerst lädt, ist X, wer danach kommt O.
-    let mySymbol = sessionStorage.getItem("mySymbol");
-    if (!mySymbol) {
-        mySymbol = Math.random() > 0.5 ? "X" : "O"; // Zufällige Zuweisung beim ersten Mal
-        sessionStorage.setItem("mySymbol", mySymbol);
-    }
-    document.getElementById("player-id").innerText = `DEIN_SYMBOL: ${mySymbol}`;
+    // Setze mich auf Online, wenn ich die Seite lade
+    set(myStatusRef, { online: true, name: userName });
+    
+    // Wenn ich den Tab schließe, setze mich automatisch offline
+    onDisconnect(myStatusRef).remove();
 
-    // --- MATRIX HINTERGRUND ---
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
-
-    function drawMatrix() {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#0F0";
-        ctx.font = fontSize + "px arial";
-        for (let i = 0; i < drops.length; i++) {
-            const text = letters[Math.floor(Math.random() * letters.length)];
-            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-            drops[i]++;
-        }
-    }
-    setInterval(drawMatrix, 33);
-
-    // --- CHAT MIT ENTER ---
-    const msgInput = document.getElementById("msgInput");
-    msgInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter" && msgInput.value) {
-            push(ref(db, "chat"), { text: `[${mySymbol}]: ${msgInput.value}` });
-            msgInput.value = "";
+    // Den Status des Gegners überwachen
+    const opponentSymbol = mySymbol === "X" ? "O" : "X";
+    onValue(ref(db, `status/${opponentSymbol}`), (snap) => {
+        const dot = document.getElementById("status-dot");
+        if (snap.exists() && snap.val().online) {
+            dot.innerText = "● ONLINE";
+            dot.style.color = "var(--matrix-green)";
+            dot.style.textShadow = "0 0 10px var(--matrix-green)";
+        } else {
+            dot.innerText = "● OFFLINE";
+            dot.style.color = "grey";
+            dot.style.textShadow = "none";
         }
     });
 
-    onChildAdded(ref(db, "chat"), (data) => {
-        const div = document.createElement("div");
-        div.className = "msg";
-        div.innerText = data.val().text;
-        document.getElementById("messages").appendChild(div);
-        document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-    });
+    // --- WIN-CHECK LOGIK ---
+    function checkWinner(board) {
+        const wins = [
+            [0,1,2], [3,4,5], [6,7,8], // Horizontal
+            [0,3,6], [1,4,7], [2,5,8], // Vertikal
+            [0,4,8], [2,4,6]           // Diagonal
+        ];
+        for (let combo of wins) {
+            if (board[combo[0]] && board[combo[0]] === board[combo[1]] && board[combo[0]] === board[combo[2]]) {
+                return board[combo[0]];
+            }
+        }
+        return null;
+    }
 
-    // --- SPIEL LOGIK ---
     onValue(ref(db, "game"), (snap) => {
         const data = snap.val() || { turn: "X", cells: {} };
-        const turn = data.turn || "X";
-        document.getElementById("status").innerText = turn === mySymbol ? "DEIN ZUG" : "WARTE AUF GEGNER...";
+        const board = data.cells || {};
         
-        document.querySelectorAll('.cell').forEach((cell, i) => {
-            const val = data.cells ? data.cells[i] : "";
-            cell.innerText = val || "";
-            cell.className = "cell " + (val === "X" ? "x-mark" : val === "O" ? "o-mark" : "");
-        });
+        // ... (Deine bisherige Zellen-Anzeige)
 
-        // Klick-Logik
-        document.querySelectorAll('.cell').forEach(cell => {
-            cell.onclick = () => {
-                if (turn === mySymbol && cell.innerText === "") {
-                    const index = cell.getAttribute('data-index');
-                    set(ref(db, `game/cells/${index}`), mySymbol);
-                    set(ref(db, "game/turn"), mySymbol === "X" ? "O" : "X");
-                }
-            };
-        });
+        const winner = checkWinner(board);
+        if (winner) {
+            const overlay = document.getElementById("overlay");
+            overlay.style.display = "flex";
+            if (winner === mySymbol) {
+                overlay.innerText = "MISSION ERFOLGREICH: GEWONNEN";
+                overlay.style.color = "gold";
+            } else {
+                overlay.innerText = "SYSTEMFEHLER: VERLOREN";
+                overlay.style.color = "red";
+            }
+            setTimeout(() => { overlay.style.display = "none"; resetGame(); }, 4000);
+        }
     });
-
-    window.resetGame = () => remove(ref(db, "game"));
 </script>
-</body>
-</html>
